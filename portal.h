@@ -62,6 +62,7 @@ const char SUCCESS_HTML[] PROGMEM = R"HTML(
   </head>
   <body>
     <h1>Successfully updated configuration!</h1>
+    <a href="/">Connection failed? Click here to return to configuration</a>
   </body>
 </html>
 )HTML";

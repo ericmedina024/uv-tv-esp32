@@ -6,8 +6,10 @@
 #include "state.h"
 #include "sun.h"
 #include "portal.h"
+#include "esp_system.h"
 
-#define DEBUG true
+
+#define DEBUG false
 #define DEBUG_ALWAYS_START_PORTAL false
 
 #define TFT_PWER_PIN 21
@@ -21,6 +23,7 @@ State currentState;
 long lastUVFetchMs = -1;
 const uint32_t BACKGROUND_COLOR = 0x4e7b;
 const unsigned long UV_UPDATE_INTERVAL_IN_MS = 5UL * 60UL * 1000UL;
+const unsigned long RESTART_INTERVAL = 24UL * 60UL * 60UL * 1000UL;
 const unsigned long EXTENDED_TOUCH_DURATION_IN_MS = 10UL * 1000UL;
 const int TOUCH_DELTA = 150;
 
@@ -94,8 +97,13 @@ bool checkForExtendedTouch() {
 
 void drawUVDisplay() {
   tft.fillScreen(BACKGROUND_COLOR);
-  float currentUVIndex = fetchCurrentUVIndex(config.latitude, config.longitude);
-  tft.setTextColor(TFT_BLACK);
+  String errorFetchingUV = "Unknown error";
+  float currentUVIndex = fetchCurrentUVIndex(config.latitude, config.longitude, "Auto", errorFetchingUV);
+  if (!isfinite(currentUVIndex)) {
+    tft.drawCentreString("Fetching UV index failed:", 120, 80, 2);
+    tft.drawCentreString(errorFetchingUV, 120, 100, 2);
+    return;
+  }
   tft.drawCentreString(String(currentUVIndex, 1), 95, 180, 6);
   drawUVIndexBar(currentUVIndex, 190, 10);
   drawImageWithoutWhite(20, 10, SUN_WIDTH, SUN_HEIGHT, sun);
@@ -112,7 +120,6 @@ void setup() {
   tft.setRotation(0);
   
   config = loadConfig();
-
 
   tft.fillScreen(BACKGROUND_COLOR);
   tft.setTextColor(TFT_BLACK);
@@ -145,7 +152,8 @@ void handleConfigurationMode() {
 
 void handleConnectWiFi() {
   tft.fillScreen(BACKGROUND_COLOR);
-  tft.drawCentreString("Connecting to " + config.wifiSsid, 120, 80, 2);
+  tft.drawCentreString("Connecting to", 100, 80, 2);
+  tft.drawCentreString(config.wifiSsid, 100, 110, 2);
   if (DEBUG) {
     tft.drawCentreString(config.wifiPassword, 120, 140, 2);
   }
@@ -156,7 +164,7 @@ void handleConnectWiFi() {
     }
     currentState = DISPLAY_UV;
   } else {
-    tft.drawCentreString("Failed to connect to WiFi", 180, 160, 2);
+    tft.drawCentreString("Failed to connect to WiFi", 120, 160, 2);
     delay(5000);
     currentState = CONFIGURATION_MODE;
   }
@@ -171,6 +179,10 @@ void handleDisplayUV() {
 }
 
 void loop() {
+  // probably good to start fresh every now and then...
+  if (millis() > RESTART_INTERVAL) {
+    esp_restart();
+  }
   if (DEBUG) {
     tft.fillRect(0, 0, 175, 80, BACKGROUND_COLOR);
   }

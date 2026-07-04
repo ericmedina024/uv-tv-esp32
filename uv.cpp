@@ -15,8 +15,9 @@ String buildCurrentUVIndexEndpointURL(const double latitude, const double longit
   return url;
 }
 
-float fetchCurrentUVIndex(const double latitude, double longitude, const String timezone) {
+float fetchCurrentUVIndex(const double latitude, double longitude, const String timezone, String& outError) {
   if (WiFi.status() != WL_CONNECTED) { 
+    outError = "WiFi not connected";
     return NAN;
   }
 
@@ -25,18 +26,39 @@ float fetchCurrentUVIndex(const double latitude, double longitude, const String 
 
   HTTPClient httpClient;
   if (!httpClient.begin(wifiClient, buildCurrentUVIndexEndpointURL(latitude, longitude, timezone))) {
+    outError = "Connection to UV service failed";
     return NAN;
   }
 
   int responseCode = httpClient.GET();
+  String uvIndexReponseString = httpClient.getString();
   httpClient.end();
   if (responseCode == 200) {
     JsonDocument uvIndexResponse;
-    DeserializationError deserializationError = deserializeJson(uvIndexResponse, httpClient.getString());
+    DeserializationError deserializationError = deserializeJson(uvIndexResponse, uvIndexReponseString);
     if (deserializationError) {
-      return NAN; 
+      outError = "UV deserialization failed";
+      return NAN;
     };
-    return (float) (uvIndexResponse["now"]["uv_index"] | NAN);
+    if (!uvIndexResponse.containsKey("now")) {
+      outError = "Key 'now' missing";
+      return NAN;
+    }
+    auto now = uvIndexResponse["now"];
+    if (!now.is<JsonObject>()) {
+      outError = "Key 'now' not an object";
+      return NAN;
+    } else if (!now.containsKey("uv_index")) {
+      outError = "Key 'uv_index' missing";
+      return NAN;
+    }
+    float uv = now["uv_index"].as<float>();
+    if (!isfinite(uv)) {
+      outError = "Invalid 'uv_index' value";
+      return NAN;
+    }
+    return uv;
   }
+  outError = "Received " + String(responseCode) + " response";
   return NAN;
 }
