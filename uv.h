@@ -1,0 +1,2 @@
+String buildCurrentUVIndexEndpointURL(const double latitude, const double longitude, const String timezone);
+float fetchCurrentUVIndex(const double latitude, double longitude, const String timezone = "Auto");
