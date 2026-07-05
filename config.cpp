@@ -17,6 +17,7 @@ Config loadConfig() {
   config.wifiPassword = prefs.getString("wifi_password", "");
   config.latitude = prefs.getDouble("latitude", 0);
   config.longitude = prefs.getDouble("longitude", 0);
+  config.bootToConfig = prefs.getBool("bootToConfig", false);
   prefs.end();
   return config;
 }
@@ -28,5 +29,6 @@ void saveConfig(const Config &config) {
   prefs.putString("wifi_password", config.wifiPassword);
   prefs.putDouble("latitude", config.latitude);
   prefs.putDouble("longitude", config.longitude);
+  prefs.putBool("bootToConfig", config.bootToConfig);
   prefs.end();
 }

@@ -4,8 +4,9 @@
 
 bool connectWiFi(const String &wifiSsid, const String &wifiPassword) {
   WiFi.softAPdisconnect(true);
+  WiFi.disconnect(true);
+  delay(1000);
   WiFi.mode(WIFI_STA);
-  WiFi.disconnect(false);
   delay(1000);
 
   int currentAttempt = 1;
@@ -23,6 +24,8 @@ bool connectWiFi(const String &wifiSsid, const String &wifiPassword) {
 
 void broadcastWiFi(const String &wifiSsid, const String &wifiPassword, const IPAddress& arduinoIp, const IPAddress& arduinoNetMask) {
   WiFi.disconnect(true);
+  WiFi.softAPdisconnect(true);
+  delay(2000);
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(arduinoIp, arduinoIp, arduinoNetMask);
   WiFi.softAP(wifiSsid, wifiPassword);

@@ -9,7 +9,7 @@
 #include "esp_system.h"
 
 
-#define DEBUG false
+#define DEBUG true
 #define DEBUG_ALWAYS_START_PORTAL false
 
 #define TFT_PWER_PIN 21
@@ -69,7 +69,7 @@ int lastTouchMs = 0;
 
 bool checkForExtendedTouch() {
   int touchValue = touchRead(TC_PIN);
-  bool beingTouched = touchValue > 1900;
+  bool beingTouched = touchValue > 1900 || touchValue < 1575;
   if (beingTouched) {
     lastTouchMs = millis();
     if (touchStartMs == 0) {
@@ -120,16 +120,25 @@ void setup() {
   tft.setRotation(0);
   
   config = loadConfig();
+  bool bootToConfig = config.bootToConfig;
+  config.bootToConfig = false;
+  saveConfig(config);
 
   tft.fillScreen(BACKGROUND_COLOR);
   tft.setTextColor(TFT_BLACK);
 
-  if (DEBUG_ALWAYS_START_PORTAL || !isValidConfig(config)) {
+  if (DEBUG_ALWAYS_START_PORTAL || bootToConfig || !isValidConfig(config)) {
     currentState = CONFIGURATION_MODE;
     return;
   }
 
   currentState = CONNECT_WIFI;
+}
+
+void rebootToConfig() {
+  config.bootToConfig = true;
+  saveConfig(config);
+  esp_restart();
 }
 
 void handleConfigurationMode() {
@@ -147,7 +156,7 @@ void handleConfigurationMode() {
   broadcastWiFi(configSsid, configPassword, configIp, IPAddress(255, 255, 255, 0));
   config = hostConfigurationServer(config);
   saveConfig(config);
-  currentState = CONNECT_WIFI;
+  esp_restart();
 }
 
 void handleConnectWiFi() {
@@ -166,7 +175,7 @@ void handleConnectWiFi() {
   } else {
     tft.drawCentreString("Failed to connect to WiFi", 120, 160, 2);
     delay(5000);
-    currentState = CONFIGURATION_MODE;
+    rebootToConfig();
   }
 }
 
@@ -191,7 +200,7 @@ void loop() {
     tft.drawCentreString(extendedTouchDetected ? "Extended touch" : "No extended touch", 75, 25, 2);
   }
   if (extendedTouchDetected) {
-    currentState = CONFIGURATION_MODE;
+    rebootToConfig();
   }
   if (currentState == DISPLAY_UV) {
     handleDisplayUV();

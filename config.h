@@ -3,6 +3,7 @@ struct Config {
   String wifiPassword = "";
   double longitude = 0;
   double latitude = 0;
+  bool bootToConfig = false;
 };
 
 bool isValidConfig(const Config& config);
