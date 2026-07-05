@@ -9,7 +9,7 @@
 #include "esp_system.h"
 
 
-#define DEBUG true
+#define DEBUG false
 #define DEBUG_ALWAYS_START_PORTAL false
 
 #define TFT_PWER_PIN 21
