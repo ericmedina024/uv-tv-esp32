@@ -102,6 +102,8 @@ void drawUVDisplay() {
   if (!isfinite(currentUVIndex)) {
     tft.drawCentreString("Fetching UV index failed:", 120, 80, 2);
     tft.drawCentreString(errorFetchingUV, 120, 100, 2);
+    delay(10000);
+    esp_restart();
     return;
   }
   tft.drawCentreString(String(currentUVIndex, 1), 95, 180, 6);
